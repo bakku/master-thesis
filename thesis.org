@@ -1,0 +1,159 @@
+#+TITLE: Building Domain Specific Languages and Polyglot Applications with GraalVM
+#+LATEX_CLASS_OPTIONS: [12pt]
+#+LATEX_HEADER: \usepackage[a4paper, top=27mm, left=20mm, right=20mm, bottom=35mm, headsep=10mm, footskip=12mm]{geometry}
+#+LATEX_HEADER: \usepackage{tabularx}
+#+LATEX_HEADER: \usepackage{fancyhdr}
+#+LATEX_HEADER: \usepackage{lipsum}
+#+LATEX_HEADER: \usepackage{titlesec}
+#+OPTIONS: toc:nil title:nil
+
+:VISUALSTYLE:
+\pagestyle{fancy}
+\lhead{}
+\chead{}
+\rhead{\leftmark}
+\lfoot{}
+\cfoot{}
+\rfoot{\ \linebreak Page \thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+\newcommand{\sectionbreak}{\clearpage}
+:END:
+
+:TITLEPAGE:
+\pagenumbering{Roman}
+
+\thispagestyle{empty}
+
+#+ATTR_LATEX: :scale 0.2 :center nil
+[[./img/oth-logo.png]]
+
+#+BEGIN_CENTER
+\vspace*{2cm}
+\Large
+*Building Domain Specific Languages and Polyglot Applications with GraalVM* \\
+\vspace*{2cm}
+\large
+Presented to the Faculty of Computer Science and Mathematics\\
+University of Applied Sciences Regensburg\\
+Study Programme: \\
+Master Computer Science\\
+\vspace*{2cm}
+\Large
+*Master Thesis* \\
+\vspace*{1cm}
+\large
+In Partial Fulfillment of the Requirements for the Degree of \\
+Master of Science (M.Sc.)
+\vspace*{1cm}
+\Large
+\vfill
+\normalsize
+\begin{tabularx}{1.0\textwidth}{ >{\raggedleft\arraybackslash}X >{\raggedright\arraybackslash}X }
+    \rule{0mm}{1ex}\textbf{Presented by}: & Christian Paling \\
+    \rule{0mm}{1ex}\textbf{Student Number}: & 123456 \\[2em]
+    \rule{0mm}{1ex}\textbf{Primary Supervising Professor:} & Prof. Dr. Michael Bulenda \\ 
+    \rule{0mm}{1ex}\textbf{Secondary Supervising Professor:} & ?? \\[2em]
+    \rule{0mm}{1ex}\textbf{Submission Date:} & ?? \\ 
+\end{tabularx}
+#+END_CENTER
+\pagebreak
+\thispagestyle{empty}
+~\pagebreak
+:END:
+
+:THESISDECLARATION:
+\setcounter{page}{1}
+
+\thispagestyle{empty}
+
+#+BEGIN_CENTER
+\Large
+\textsc{Thesis Declaration}
+#+END_CENTER
+
+\pagebreak
+:END:
+
+:ABSTRACT:
+\thispagestyle{empty}
+
+#+BEGIN_CENTER
+\Large
+\textsc{Abstract}
+#+END_CENTER
+
+\pagebreak
+:END:
+
+:TOC:
+\tableofcontents
+\pagebreak
+:END:
+
+\pagenumbering{arabic}
+
+* Introduction
+
+Business as usual
+
+* Overview of GraalVM
+
+** Motivation
+
+Why do we need Graal?
+
+** Features
+
+*** GraalVM Compiler
+
+Explanation and some benchmarks
+
+*** Native Images
+
+Explanation and some benchmarks yet again
+
+*** Truffle Framework
+
+Basic explanations: why is there a truffle framework and what is achievable
+
+*** Polyglot Applications
+
+Basic explanations: what's possible here
+
+* Domain Specific Languages in GraalVM
+
+** Technical Overview
+
+How to build DSLs with GraalVM?
+
+** <INSERT NAME OF DSL>
+
+Introduce the DSL of this thesis here
+
+** Implementation of <INSERT NAME OF DSL>
+
+Hightlight some key aspects of implementation
+
+** Evaluation
+
+Evaluate the DSL and GraalVM, hightlight pain points etc.
+
+* Integration of Domain Specific Languages 
+
+** Technical Overview
+
+How do polyglot applications technically work?
+
+** Integration of <INSERT NAME OF DSL>
+
+Showcase how it's done using the thesis DSL
+
+** Evaluation
+
+Evaluation how good this actually works
+
+* Conclusion
+
+Business as usual
