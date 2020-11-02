@@ -5,6 +5,10 @@
 #+LATEX_HEADER: \usepackage{fancyhdr}
 #+LATEX_HEADER: \usepackage{lipsum}
 #+LATEX_HEADER: \usepackage{titlesec}
+#+LATEX_HEADER: \usepackage{mathpazo}
+#+LATEX_HEADER: \usepackage[euler-digits,small]{eulervm}
+#+LATEX_HEADER: \usepackage[english]{babel}
+#+LATEX_HEADER: \addto\captionsenglish{\renewcommand{\contentsname}{Table of Contents}}
 #+OPTIONS: toc:nil title:nil
 
 :VISUALSTYLE:
@@ -60,7 +64,7 @@ Master of Science (M.Sc.)
 #+END_CENTER
 \pagebreak
 \thispagestyle{empty}
-~\pagebreak
+\pagebreak
 :END:
 
 :THESISDECLARATION:
@@ -90,9 +94,8 @@ Master of Science (M.Sc.)
 :TOC:
 \tableofcontents
 \pagebreak
-:END:
-
 \pagenumbering{arabic}
+:END:
 
 * Introduction
 
@@ -130,15 +133,19 @@ How to build DSLs with GraalVM?
 
 ** <INSERT NAME OF DSL>
 
-Introduce the DSL of this thesis here
+Introduce the DSL of this thesis here 1 2 3 4 5
+
+\begin{equation}
+A = \{\ x\ |\ x \in (A \cap B)\ \} 1 2 3 4 5
+\end{equation}
 
 ** Implementation of <INSERT NAME OF DSL>
 
-Hightlight some key aspects of implementation
+Highlight some key aspects of implementation
 
 ** Evaluation
 
-Evaluate the DSL and GraalVM, hightlight pain points etc.
+Evaluate the DSL and GraalVM, highlight pain points etc.
 
 * Integration of Domain Specific Languages 
 
