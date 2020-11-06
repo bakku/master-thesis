@@ -1,4 +1,6 @@
 #+TITLE: Building Domain Specific Languages and Polyglot Applications with GraalVM
+
+:PREAMBLE:
 #+LATEX_CLASS_OPTIONS: [12pt]
 #+LATEX_HEADER: \usepackage[a4paper, top=27mm, left=20mm, right=20mm, bottom=35mm, headsep=10mm, footskip=12mm]{geometry}
 #+LATEX_HEADER: \usepackage{tabularx}
@@ -10,6 +12,7 @@
 #+LATEX_HEADER: \usepackage[english]{babel}
 #+LATEX_HEADER: \addto\captionsenglish{\renewcommand{\contentsname}{Table of Contents}}
 #+OPTIONS: toc:nil title:nil
+:END:
 
 :VISUALSTYLE:
 #+BEGIN_EXPORT latex
@@ -144,9 +147,11 @@ How to build DSLs with GraalVM?
 
 Introduce the DSL of this thesis here 1 2 3 4 5
 
+#+BEGIN_EXPORT latex
 \begin{equation}
-A = \{\ x\ |\ x \in (A \cap B)\ \} 1 2 3 4 5
+A = \{\ x\ |\ x \in (A \cap B)\ \}
 \end{equation}
+#+END_EXPORT
 
 ** Implementation of <INSERT NAME OF DSL>
 
