@@ -6,6 +6,7 @@
 #+LATEX_HEADER: \usepackage[a4paper, top=27mm, left=20mm, right=20mm, bottom=35mm, headsep=10mm, footskip=12mm]{geometry}
 #+LATEX_HEADER: \usepackage{tabularx}
 #+LATEX_HEADER: \usepackage{fancyhdr}
+#+LATEX_HEADER: \usepackage{tikz}
 #+LATEX_HEADER: \usepackage{lipsum}
 #+LATEX_HEADER: \usepackage{titlesec}
 #+LATEX_HEADER: \usepackage{mathpazo}
@@ -67,10 +68,10 @@ Master of Science (M.Sc.)
 \normalsize
 \begin{tabularx}{1.0\textwidth}{ >{\raggedleft\arraybackslash}X >{\raggedright\arraybackslash}X }
     \rule{0mm}{1ex}\textbf{Presented by}: & Christian Paling \\
-    \rule{0mm}{1ex}\textbf{Student Number}: & 123456 \\[2em]
+    \rule{0mm}{1ex}\textbf{Student Number}: & 3213285 \\[2em]
     \rule{0mm}{1ex}\textbf{Primary Supervising Professor:} & Prof. Dr. Michael Bulenda \\ 
-    \rule{0mm}{1ex}\textbf{Secondary Supervising Professor:} & ?? \\[2em]
-    \rule{0mm}{1ex}\textbf{Submission Date:} & ?? \\ 
+    \rule{0mm}{1ex}\textbf{Secondary Supervising Professor:} & Prof. Dr. Carsten Kern \\[2em]
+    \rule{0mm}{1ex}\textbf{Submission Date:} & \today \\ 
 \end{tabularx}
 \end{center}
 \pagebreak
@@ -121,7 +122,7 @@ Business as usual
 
 * Domain Specific Languages
 
-Before diving into the technical details and the implementation of DSLs on top of GraalVM, some background information is necessary to lay a foundation for the upcoming chapters of this thesis. First, the term /domain specific language/ is properly defined and a distinction between different types of DSLs is made. Afterwards, benefits as well as problems of DSLs and the usage thereof are discussed. Lastly, basic techniques and examples of how to implement the different types of DSLs are introduced. The contents of this chapter are based heavily on /Domain-Specific Languages/ by /Martin Fowler/ [[cite:fowler2010domain]] which can be consulted for further information about DSLs.
+Before diving into the technical details and the implementation of DSLs on top of GraalVM, some background information is necessary to lay a foundation for the upcoming chapters of this thesis. First, the term /domain specific language/ is properly defined and a distinction between different types of DSLs is made. Afterwards, benefits as well as problems of DSLs and the usage thereof are discussed. Lastly, basic techniques and examples of how to implement the different types of DSLs are introduced. The contents of this chapter are based heavily on /Domain-Specific Languages/ by /Martin Fowler/ [[cite:fowler2010domain]] and /Crafting Interpreters/ by /Bob Nystrom/ [[cite:nystrominterpreters]] which can be consulted for further information about the creation of DSLs or custom languages in general.
 
 ** Definition of Domain Specific Languages
 
@@ -144,8 +145,8 @@ For all these types of DSLs, the boundary which determines whether something is 
 #+NAME: lst:internal_dsl_spring_boot_testing
 #+BEGIN_SRC java
   apiTestClient.perform(get("/users"))
-    .andDo(print())
-    .andExpect(status().isOk());
+      .andDo(print())
+      .andExpect(status().isOk());
 #+END_SRC
 
 Listing [[lst:internal_dsl_spring_boot_testing]] depicts a testing library offered by the Spring framework to check the behaviour of a RESTful backend. The testing library offers a variety of static methods combined with elegant method chaining to fluently define a test. For instance, the /andDo/ method expects an object that implements a /ResultHandler/ interface. The static method /print/ constructs such an instance and passes it to the /andDo/ method. It is therefore apparent that a standalone executing of the /print/ method would not result in anything meaningful. The /print/ method as well as the /andDo/ method can only be reasonably evaluated when they are both combined with each other.
@@ -190,7 +191,7 @@ Listing [[lst:internal_dsl_spring_boot_testing]] depicts a testing library offer
       .build();
 #+END_SRC
 
-On the other hand, listing\nbsp[[lst:internal_dsl_person_builder]] shows the definition and usage of a /builder pattern/ to create instances of a hypothetical /Person/ class. In this case it is arguable whether /PersonBuilder/ exposes an internal DSL. Each method of the builder such as /name/ or /age/ can be independently described by setting an attribute of the resulting person i.e., each method has a self-sufficient meaning by itself. Additionally, except having to call /newPerson/ at the beginning and /build/ at the end, the creation of a new person is not dependent on any grammar which an actual language should be composed of.
+On the other hand, listing\nbsp[[lst:internal_dsl_person_builder]] shows the definition and usage of a /builder pattern/ to create instances of a hypothetical /Person/ class. In this case it is arguable whether /PersonBuilder/ exposes an internal DSL. Each method of the builder such as /name/ or /age/ can be independently described by setting an attribute of the resulting person, i.e. each method has a self-sufficient meaning by itself. Additionally, except having to call /newPerson/ at the beginning and /build/ at the end, the creation of a new person is not dependent on any grammar which an actual language should be composed of.
 
 For external DSLs one has to differentiate between a DSL and a general-purpose language, though the boundary is not as blurry as with internal DSLs. A good example presented by Martin Fowler [[cite:fowler2010domain]] is the /R language/[fn:1], which is a programming language for statistical computing. While focusing on a particular domain, the R language is not limited in its expressiveness and can be employed for purposes it was not initially intended for. Therefore, though it partly complies with the definition of a DSL, it should be categorized as a general-purpose language. A popular and widely spread example for an external DSL is /regular expressions/. It is specialized on matching text and offers only the amount of features and syntax to excel for this purpose. As a general rule, external DSLs are not /Turing-complete/. They usually do not offer mechanisms for control flow such as loops or conditions combined with the possibility to define variables and functions.
 
@@ -198,7 +199,7 @@ For external DSLs one has to differentiate between a DSL and a general-purpose l
 
 ** Benefits and Problems of Domain Specific Languages
 
-After defining and categorizing DSLs, the question arises why developers of software systems should actually build and use DSLs. What are potential benefits as well as problems of DSLs? By weighing each of the advantages and downsides of DSLs, software professionals will be able to decide whether a DSL could potentially help to solve a certain problem or not.
+After defining and categorizing DSLs, the question arises why developers of software systems should actually build and use DSLs. What are potential benefits as well as problems of DSLs? By weighing each of the advantages and downsides of DSLs, software professionals will be able to decide whether or not a DSL could potentially help to solve a certain problem.
 
 According to Martin Fowler, DSLs offer the following advantages [[cite:fowler2010domain]]:
 
@@ -209,16 +210,584 @@ According to Martin Fowler, DSLs offer the following advantages [[cite:fowler201
 
 Contrary to these advantages, the usage of DSLs also comes with some problems and threats. Among them are the following [[cite:fowler2010domain]]:
 
-- *Language Cacophony:* This term was coined by Martin Fowler and states that learning new languages is generally hard. Therefore, it is apparent that combining multiple language for a project complicates the development compared to only using a single language. It is therefore necessary to determine whether or not learning a DSL is less costly opposed to understanding and working at the problems at hand without a DSL.
+- *Language Cacophony:* This term was coined by Martin Fowler and states that learning new languages is generally hard. Therefore, it is apparent that combining multiple language for a project complicates the development compared to only using a single language. It is therefore necessary to determine whether or not learning a DSL is less costly opposed to understanding and working on the problems at hand without a DSL.
 - *Cost of Building:* The most obvious problem of creating a DSL is the initial cost of building it. However, not only the initial costs of implementing the DSL has to be taken into account. Throughout time the DSL will have to be maintained and extended as well. Moreover, according to Fowler, it is not common for developers to know the techniques which are necessary to build DSLs which further aggravates the cost of implementing one.
 - *Ghetto Language:* With the /ghetto language problem/, Martin Fowler refers to an issue which contrasts with the language cacophony problem. The term describes a language, built in-house, which is being utilized in more and more systems of the company as well as being continually extended with features and therefore slowly evolving into a general-purpose language. In the long run, this will lead the company to be inflexible regarding technological innovations and shifts in the industry as well as making it harder to hire staff. As a consequence, companies should clearly define the purpose and boundaries of their DSL and refrain from breaching these decisions.
-- *Blinkered Abstraction:* The last problem Fowler highlights, is the situation where developers are too confident about their DSL and try to fit the world to work with their language, instead of changing the language in accordance to the world. Thus, software professionals must view their DSL to be constantly under development, instead of regarding it as being finished.
+- *Blinkered Abstraction:* The last problem Fowler highlights is the situation where developers are too confident about their DSL and try to fit the world to work with their language, instead of changing the language in accordance to the world. Thus, software professionals must view their DSL to be constantly under development, instead of regarding it as being finished.
 
 As a conclusion, there are two possible reasons not to use a DSL. First, in case none of the benefits of a DSL applies to the problem at hand it is naturally not a fitting tool to solve that problem. Secondly, if the costs and risks of building a DSL outweigh its potential benefits. Otherwise it can be worthwhile to consider building or using a DSL to benefit from the potential prospects as set out in this section.
 
 [fn:2] https://maven.apache.org/
 
 ** Implementation of Domain Specific Languages
+
+In order to compare and evaluate the implementation of DSLs with the frameworks offered by GraalVM, an overview of how DSLs can be built without additional technologies is necessary. The following section explains how internal and external DSLs can be implemented. For both types, a language for the same and rather simple problem will be built. The Java SDK ships with a powerful timer facility to schedule tasks for future and recurring execution. A /TimerTask/ defines such a task which can be run once or repeatedly in the future. Listing [[lst:timer_api_usage]] displays how a TimerTask can be created and scheduled. In this example, the string /Hello World/ will be printed periodically every 1000 milliseconds with a delay of 5000 milliseconds. If the last parameter is omitted, /Hello World/ would be only printed once after 5000 milliseconds have elapsed.
+
+#+CAPTION: After five seconds print /Hello World/ every second by using a TimerTask.
+#+ATTR_LATEX: :placement [!h]  
+#+NAME: lst:timer_api_usage
+#+BEGIN_SRC java
+  var timer = new Timer();
+  
+  timer.schedule(new TimerTask() {
+      @Override
+      public void run() {
+          System.out.println("Hello World");
+      }
+  }, 5000, 1000);
+#+END_SRC
+
+The internal and external DSLs which will be presented in the further course of this section will serve as a layer on top of this API and will enable developers to schedule tasks in a more fluent manner. The primary objective of both upcoming DSLs, however, is to illustrate prevalent approaches to implement both types of DSLs.
+
+When creating DSLs, a common strategy described by Fowler [[cite:fowler2010domain]] is to first write some code to exemplify how the DSL should look like. Using these examples, the developer can iteratively verify whether the abilities of the DSL already fulfil all requirements or whether the DSL has to be modified and adapted. After the design of the language is set, it can be implemented incrementally, feature after feature, to its intended form.
+
+*** Internal Domain Specific Languages
+
+Internal DSLs are generally more approachable than external DSLs due to the fact that external DSLs require more techniques such as grammars and parsers in order to build them. On the flip side, internal DSLs are largely constrained by their host language. There are general-purpose languages such as Ruby or Lisp which are very flexible regarding their syntax or offer specialized functionalities, such as macros in Lisp, to create custom languages. Other programming languages like Java or C++ have more restrictive syntactic rules in comparison which affects the look and feel of internal DSLs.
+
+To build and structure internal DSLs different approaches exist and are employed. However, since this thesis covers GraalVM, a technology based on Java, a common way to build internal DSLs using /object-oriented programming/ (OOP) will be illustrated. To create internal DSLs using an OOP host language, Martin Fowler argues [[cite:fowler2010domain]] that the DSL itself and the actual objects which the DSL utilizes should be separate from each other. Internal DSLs should be built in form of so called /expression builders/ which should not define any domain logic but only offer constructs to build expressions of the DSL. The actual logic should be located in another layer hidden behind the expression builder which the builder utilizes once the DSL expression should be executed. This approach enables separate testing of the domain logic and the expression builder as well as the possibility to replace the expression builder with an external DSL if necessary. In the context of the timer scheduling DSL, the Java timer API represents the layer of the domain logic while a separate layer of expression builders has to be implemented. 
+
+As previously mentioned, the first step of building a DSL is to write some example code. Listing [[lst:timer_internal_dsl_example]] depicts how the internal timer scheduling DSL should look like. The timer itself is configured using an API similar to a builder pattern while static methods act as descriptive parameters, like setting what the timer should execute or the delay of the timer.
+
+#+CAPTION: Some expressions to schedule future and potentially periodic tasks.
+#+ATTR_LATEX: :placement [!h]  
+#+NAME: lst:timer_internal_dsl_example
+#+BEGIN_SRC java
+  timer()
+      .execute(print("Hello World repeatedly!"))
+      .repeatedly()
+      .every(minutes(1))
+      .after(seconds(30))
+      .setup();
+
+  timer()
+      .execute(print("Hello World once!"))
+      .once()
+      .after(seconds(10))
+      .setup();
+
+  timer()
+      .execute(print("Hello World once now!"))
+      .once()
+      .rightNow()
+      .setup();
+#+END_SRC
+
+Because the static methods for the different units of time and for the timer tasks provide the more simpler functionalities of the DSL, they will be attended to first. Listing [[lst:timer_internal_dsl_duration_class]] and [[lst:timer_internal_dsl_tasks_class]] depict two classes which are structured in a similar fashion. Both classes are final and therefore cannot and should not be extended. Furthermore, both have private constructors to prohibit the creation of instances of both classes. The implementation of the /Duration/ class is self-explanatory and converts different units of time to milliseconds, since the Java SDK expects milliseconds for the scheduling of timers. Static methods of the /Tasks/ class should create instances of the /TimerTask/ class offered by the Java SDK which will be scheduled and executed after the configuration of the timer has completed. In this example only a simple /print/ task exists, though more complex tasks like syncing databases or sending emails would be possible.
+
+#+CAPTION: /Duration/ offers static methods for different units of time.
+#+ATTR_LATEX: :placement [!h]  
+#+NAME: lst:timer_internal_dsl_duration_class
+#+BEGIN_SRC java
+public final class Duration {
+    private Duration() {}
+
+    public static long seconds(long n) {
+        return n * 1000;
+    }
+
+    public static long minutes(long n) {
+        return seconds(60 * n);
+    }
+
+    public static long hours(long n) {
+        return minutes(60 * n);
+    }
+}
+#+END_SRC
+
+#+CAPTION: /Tasks/ offers static methods for different timer tasks, here only a print task.
+#+ATTR_LATEX: :placement [!h]  
+#+NAME: lst:timer_internal_dsl_tasks_class
+#+BEGIN_SRC java
+public final class Tasks {
+    private Tasks() {}
+
+    public static TimerTask print(String message) {
+        return new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println(message);
+            }
+        };
+    }
+}
+#+END_SRC
+
+The method chaining with which the timer is constructed is built using separate classes. Each class offers the developer one or more possibilities to configure the timer and returns an instance of a new class which defines the next step of configuration. Each step therefore acquires a part of the configuration and passes it on to the next step. In the final step and class, all the obtained information is used to configure and schedule an actual timer using the Java API.
+The first class in this hierarchy is shown in listing [[lst:timer_internal_dsl_timer_expression_builder_class]]. It offers the static /timer/ method which was the initial method with which each DSL expression has to start according to the language design of listing [[lst:timer_internal_dsl_example]]. This method creates the actual instance of the builder class which only possesses one instance method called /execute/. Since /execute/ expects an instance of type /TimerTask,/ it fits perfectly to the static methods of the /Tasks/ class from listing [[lst:timer_internal_dsl_tasks_class]] which should return predefined objects of type /TimerTask/.
+
+#+CAPTION: /TimerExpressionBuilder/ defines the starting point of the DSL.
+#+ATTR_LATEX: :placement [!h]  
+#+NAME: lst:timer_internal_dsl_timer_expression_builder_class
+#+BEGIN_SRC java
+public final class TimerExpressionBuilder {
+    private TimerExpressionBuilder() {}
+
+    public static TimerExpressionBuilder timer() {
+        return new TimerExpressionBuilder();
+    }
+
+    public TimerExpressionBuilderWithTask execute(TimerTask task) {
+        return new TimerExpressionBuilderWithTask(task);
+    }
+}
+#+END_SRC
+
+The /execute/ method creates an instance of another class called /TimerExpressionBuilderWithTask/ which is displayed in listing [[lst:timer_internal_dsl_timer_expression_builder_with_task_class]] and defines the next possible steps of the timer configuration. The developer can choose between either calling /repeatedly/ or /once/ which both create different subsequent objects to differentiate between a timer task that should be executed only once and one that should be run multiple times.
+
+#+CAPTION: /TimerExpressionBuilderWithTask/ marks the next step of configuration of the timer.
+#+ATTR_LATEX: :placement [!h]  
+#+NAME: lst:timer_internal_dsl_timer_expression_builder_with_task_class
+#+BEGIN_SRC java
+  public final class TimerExpressionBuilderWithTask {
+      private final TimerTask task;
+
+      public TimerExpressionBuilderWithTask(TimerTask task) {
+          this.task = task;
+      }
+
+      public RepeatableTimerExpressionBuilder repeatedly() {
+          return new RepeatableTimerExpressionBuilder(this.task);
+      }
+
+      public SingleTimerExpressionBuilder once() {
+          return new SingleTimerExpressionBuilder(this.task);
+      }
+  }
+#+END_SRC
+
+Since each step of the DSL is in a separate class, the type system makes it impossible to create invalid DSL expressions. If all methods would be defined in a single class, a developer could potentially call the methods /once/ and /repeatedly/ after each other which would result in ambigous code. Furthermore, considering that code completion is offered by nearly every /integrated development environment/ nowadays, the developer is piloted through the creation of the expression, since the code completion will only offer the next methods according to the hierachy of the expression builder classes.
+
+All remaining steps and expression builder classes follow a similar structure and can be viewed in listing [[lst:timer_internal_dsl_remaining_periodic_classes]] and [[lst:timer_internal_dsl_remaining_single_classes]] of the appendix.
+
+*** External Domain Specific Languages
+
+External DSLs compared to internal ones come with a much greater syntactic freedom. This liberality concerning the syntax, however, goes along with a more complex implementation. The basic principles with which external DSLs are build are very similar to the ones of general-purpose languages, though developers of DSLs do not have to know the techniques as in depth as general-purpose language developers. Interestingly, according to Bob Nystrom [[cite:nystrominterpreters]], the techniques with which languages are build have not really changed since the early days of computing.
+
+Before explaining the approach with which the external DSL for scheduling timers is implemented, the structure and syntax of the intended language will be presented first. Listing\nbsp[[lst:timer_external_dsl_example]] presents some example code of the external DSL. It is apparent that the syntax of the DSL does not follow the syntactic rules of Java anymore. Timers are grouped in /timer/ and /end/ pairs and allow the same configurable features as with the internal DSL.
+
+#+CAPTION: Some external DSL expressions to schedule future and potentially periodic tasks.
+#+ATTR_LATEX: :placement [!h]  
+#+NAME: lst:timer_external_dsl_example
+#+BEGIN_SRC ruby
+  timer
+    print "Hello World"
+    repeatedly
+    every 30 seconds
+    after 2 minutes
+  end
+
+  timer
+    print "Hello World once!"
+    once
+    after 10 seconds
+  end
+
+  timer
+    print "Hello World now!"
+    once
+    right now
+  end
+#+END_SRC
+
+To build this DSL, a process based on Bob Nystrom's online book /Crafting Interpreters/\nbsp[[cite:nystrominterpreters]] was employed. The book uses widespread techniques to build languages which are also highlighted in Fowler's work about DSLs [[cite:fowler2010domain]]. This process divides the evaluation of language expressions into at least three steps.
+
+The first step is called /lexing/. A /lexer/ takes the code of the language and splits it into individual tokens. A token is a data structure which is associated to a certain type and might contain a value. Listing [[lst:timer_external_dsl_token_types]] lists all types of tokens of the DSL as an enum. Every keyword is a different token type, in addition to the two datatypes which the DSL supports: strings and numbers. Lastly, an /EOF/ token type marks the end of the source code.
+
+#+CAPTION: All types of tokens of the DSL.
+#+ATTR_LATEX: :placement [!h]  
+#+NAME: lst:timer_external_dsl_token_types
+#+BEGIN_SRC java
+  public enum TokenType {
+      TIMER, REPEATEDLY, ONCE, RIGHT, NOW,
+      PRINT, AFTER, EVERY, STRING, NUMBER,
+      SECONDS, MINUTES, HOURS, END, EOF
+  }
+#+END_SRC
+
+The token itself is a simple class with, as previously mentioned, attributes for the type of the token and the value. It is presented in listing [[lst:timer_external_dsl_token_class]]. Note that the value will be /null/ for most types of tokens except strings and numbers since keywords do not hold any literal values.
+
+#+CAPTION: The /Token/ class for the lexer.
+#+ATTR_LATEX: :placement [!h]  
+#+NAME: lst:timer_external_dsl_token_class
+#+BEGIN_SRC java
+  public class Token {
+      private final TokenType type;
+      private final Object value;
+  
+      public Token(TokenType type, Object value) {
+          this.type = type;
+          this.value = value;
+      }
+  
+      public TokenType getType() {
+          return type;
+      }
+  
+      public Object getValue() {
+          return value;
+      }
+  }
+#+END_SRC
+
+The lexer moves character by character through the source code, tries to identify tokens and stores them in a list, and in the end returns that list of tokens. Listing [[lst:timer_external_dsl_basic_structure_lexer_class]] depicts the basic structure of such a lexer. The attributes include the start position of the current read as well as the end position, the source code itself, and the list of tokens which will be returned in the end.
+
+#+CAPTION: Basic structure of the /Lexer/ class.
+#+ATTR_LATEX: :placement [!h]  
+#+NAME: lst:timer_external_dsl_basic_structure_lexer_class
+#+BEGIN_SRC java
+    public class Lexer {
+        private int startOfToken = 0;
+        private int endOfToken = 0;
+        private final String code;
+        private final List<Token> tokens = new ArrayList<>();
+
+        public Lexer(String code) {
+            this.code = code;
+        }
+
+        public List<Token> getTokens() throws TimerDSLException {
+            while (!isAtEnd()) {
+                readNextToken();
+                this.startOfToken = this.endOfToken + 1;
+                this.endOfToken = this.startOfToken;
+            }
+
+            tokens.add(new Token(EOF, null));
+            return tokens;
+        }
+  }
+#+END_SRC
+
+As long as the lexer has not reached the end of the source code, i.e. the start position is greater than the length of the source code, the lexer tries to read the next token. Listing [[lst:timer_external_dsl_read_next_token_method]] illustrates how the lexer identifies the next token. By comparing the character of the current position, the lexer can judge what it will expect as a next token. If for example the current character is a double quote, the lexer can assume that the next token should be a string. 
+
+#+CAPTION: The lexer identifies the next token by checking the first character of the next token.
+#+ATTR_LATEX: :placement [!h]  
+#+NAME: lst:timer_external_dsl_read_next_token_method
+#+BEGIN_SRC java
+  private void readNextToken() throws TimerDSLException {
+      var nextChar = code.charAt(this.startOfToken);
+
+      if (List.of(' ', '\r', '\t', '\n').contains(nextChar)) {
+          // Ignore whitespaces
+      } else if ('"' == nextChar) {
+          string();
+      } else if (isDigit(nextChar)) {
+          number();
+      } else if (isAlpha(nextChar)) {
+          keyword();
+      } else {
+          throw new TimerDSLException("Unexpected character");
+      }
+  }
+#+END_SRC
+
+After the decision has been made regarding the expectation of the next token, the lexer tries to find the end of this token. Listing [[lst:timer_external_dsl_read_string_token]] shows how this is accomplished for strings.
+
+#+CAPTION: The lexer tries to find the end of the string to then get the value between the start and end position.
+#+ATTR_LATEX: :placement [!h]  
+#+NAME: lst:timer_external_dsl_read_string_token
+#+BEGIN_SRC java
+  private void string() throws TimerDSLException {
+      endOfToken++;
+      while (peek() != '"' && !isAtEnd()) endOfToken++;
+
+      if (isAtEnd()) throw new TimerDSLException("Unterminated string");
+
+      endOfToken++;
+      var value = code.substring(startOfToken + 1, endOfToken - 1);
+      tokens.add(new Token(STRING, value));
+  }
+#+END_SRC
+
+With the help of the peek method which returns the character of the current end position, the lexer is able to find the end of the string by searching for the second double quote. In case it reaches the end of the source code before finding the second double quote, the lexer throws an exception, otherwise the value of the string is extracted from the source code and saved as a string token in the list of tokens.
+
+The approach for identifying numbers or keywords is using a very similar approach and can be viewed in the complete definition of the lexer class in listing [[lst:timer_external_dsl_lexer_class]] and [[lst:timer_external_dsl_lexer_class_part_2]] of the appendix.
+
+In the second step of the whole evaluation, a /parser/ takes this list of tokens to generate an /abstract syntax tree/ (AST) according to the grammatical rules of the language. The grammar is generally a /context-free grammar/ (CFG) which is often notated in a flavour of the /Backus-Naur form/ (BNF). Listing [[lst:backus_naur_example]] illustrates how a grammar could be defined using a version of the BNF which Bob Nystrom uses in his work [[cite:nystrominterpreters]].
+
+#+CAPTION: A simple grammar for configuring pizzas
+#+ATTR_LATEX: :placement [!h]  
+#+NAME: lst:backus_naur_example
+#+BEGIN_SRC java
+  pizza   → crust "with" cheese "and" (topping "and" | topping)+
+  crust   → "thin crust" | "thick crust"
+  cheese  → "mozzarella cheese" | "provolone cheese"
+  topping → "mushrooms" | "extra cheese" | "salami" | "ham"
+#+END_SRC
+
+A CFG has /terminals/ and /nonterminals/. A terminal is like a literal value of the grammar, for example /mozzarella cheese/ or /mushrooms/. Terminals mark end points and cannot be replaced with more symbols. Nonterminals on the other hand are references to other rules which allow the construction of more complex expressions. The /pizza/ nonterminal is the starting point of the grammar with a /crust/ nonterminal at the beginning. The /crust/ nonterminal offers two possible terminals (specified by the | sign): either a /thin crust/ or a /thick crust/. At the end of the pizza nonterminal there are again two possibilities. It is either allowed to choose a topping combined with an /and/ terminal (to be able to have multiple toppings) or just a single topping. The + sign specifies the same as with regular expressions. It marks that a certain rule can occur once or more times while a * would indicate that a rule can be utilized zero or more times. The parentheses group these possibilities regarding the toppings together and signify that the + sign can only be applied to the toppings. This way an arbitrary amount of toppings is possible. The following sentences would be valid according to the grammar:
+
+- thin crust with mozzarella cheese and mushrooms
+- thick crust with provolone cheese and salami and ham and mushrooms
+
+With the help of a grammar, it is also possible to represent an expression in form of a tree, the AST. Figure [[img:ast_pizza_example]] visualizes the second sentence from above in the form of an AST which conforms to the defined grammar.
+
+#+CAPTION: /thick crust with provolone cheese and salami and ham and mushrooms/ represented as an AST
+#+NAME: img:ast_pizza_example
+#+ATTR_LATEX: :options [!h]  
+#+begin_figure
+\begin{center}
+\begin{tikzpicture}[sibling distance=5em,
+  every node/.style = {shape=rectangle, rounded corners, align=center}]]
+  \node {\footnotesize pizza}
+    child { node {\footnotesize crust}
+      child { node {\footnotesize "thick crust"} } }
+    child { node {\footnotesize "with"} }
+    child { node {\footnotesize cheese}
+      child { node {\footnotesize "provolone cheese"} } }
+    child { node {\footnotesize topping}    
+      child { node {\footnotesize "salami"} } }
+    child { node {\footnotesize "and"} }
+    child { node {\footnotesize topping}    
+      child { node {\footnotesize "ham"} } }
+    child { node {\footnotesize "and"} }
+    child { node {\footnotesize topping}    
+      child { node {\footnotesize "mushrooms"} } };
+\end{tikzpicture}
+\end{center}
+#+end_figure
+
+The main task of the parser in the process presented by Nystrom [[cite:nystrominterpreters]] is to build an AST representation of the tokens for easier future processing. To understand how such a parser can be build, the implementation of a parser for the timer scheduling DSL will be subsequently illustrated. Listing [[lst:timer_external_dsl_grammar]] depicts a possible grammar for the DSL (as seen in listing [[lst:timer_external_dsl_example]]) in BNF.
+
+#+CAPTION: The grammar of the external timer DSL in BNF.
+#+ATTR_LATEX: :placement [!h]
+#+NAME: lst:timer_external_dsl_grammar
+#+BEGIN_SRC java
+  program             → timer_stmt+
+  timer_stmt          → "timer" command (once_timer | repeated_timer) "end"
+  command             → "print" STRING
+  once_timer          → "once" after_configuration
+  repeated_timer      → "repeatedly" "every" NUMBER time_unit after_configuration
+  after_configuration → "right" "now" | "after" NUMBER time_unit
+  time_unit           → "seconds" | "minutes" | "hours"
+#+END_SRC
+
+A program written in the DSL consists of one or more /timer statements/. Each /timer statement/ has to start with the terminal /timer/ and has to end with the terminal /end/. Between /timer/ and /end/, the first expected nonterminal is the command. Currently only the /print/ command is supported which expects a string. After the command, two different possiblities exist to configure the timer: a /once timer/ and a /repeated timer/. The /once timer/ only expects a configuration for the delay of the command while the /repeated timer/ expects the configuration of the period of the command in addition.
+
+The implementation is surprisingly simple, once well understood. The first step is to define the AST datastructure. Listing [[lst:timer_external_dsl_ast_root]] shows the root element of the tree: a /timer statement/. The class has two attributes which resemble the children of the root: a /command/ and the configuration of the timer.
+
+#+CAPTION: The root element of the AST.
+#+ATTR_LATEX: :placement [!h]
+#+NAME: lst:timer_external_dsl_ast_root
+#+BEGIN_SRC java
+  public class TimerStmt {
+      private final Command command;
+      private final TimerConfiguration configuration;
+  
+      public TimerStmt(Command command, TimerConfiguration configuration) {
+          this.command = command;
+          this.configuration = configuration;
+      }
+  
+      public Command getCommand() {
+          return command;
+      }
+  
+      public TimerConfiguration getConfiguration() {
+          return configuration;
+      }
+  }
+#+END_SRC
+
+Since for the purposes of this example only a /print/ command is supported, the command class is rather simple, although it is laid out to be extended at will. Listing [[lst:timer_external_dsl_ast_command]] depicts the /Command/ class which is abstract and which includes the /print/ command as a static nested class. Naturally, the /print/ command only has one "child" which is the message it should print.
+
+#+CAPTION: All commands are subclasses of the /Command/ class.
+#+ATTR_LATEX: :placement [!h]
+#+NAME: lst:timer_external_dsl_ast_command
+#+BEGIN_SRC java
+  public abstract class Command {
+      public static class PrintCommand extends Command {
+          private final String message;
+  
+          public PrintCommand(String message) {
+              this.message = message;
+          }
+  
+          public String getMessage() {
+              return message;
+          }
+      }
+  }
+#+END_SRC
+
+The /timer configuration/ has a resembling structure and is presented in listing [[lst:timer_external_dsl_ast_timer_configuration]] in the appendix for the sake of completion. The /TimerConfiguration/ class itself is again abstract but has different subclasses. Analogous to the grammar, a timer configuration is either a /once timer/ or a /repeated timer/. The /once timer/ has only a time setting for the delay, while the /repeated timer/ has an additional time setting for the period.
+
+It is noticable that the composition of the AST is very similar to the composition of the grammar. This is due to the AST being a representation of the syntactic structure of the code, as previously mentioned. The question now arises, however, how the AST of some concrete code can actually be constructed. To address this problem, Bob Nystrom presents a popular technique in his work [[cite:nystrominterpreters]] which is called /recursive descent/. In simple words, recursive descent parsing is a translation of the grammar into programming language code. Many of today's programming language implementations are based on the recursive descent parsing technique, such as the GCC or the Roslyn C# compiler [[cite:nystrominterpreters]].
+
+As presented in listing [[lst:timer_external_dsl_parser_basic_structure]], the parser for the timer DSL has only two attributes: the list of tokens and the current position of the parser in this aforementioned list.
+
+#+CAPTION: The basic structure of the timer DSL parser.
+#+ATTR_LATEX: :placement [!h]
+#+NAME: lst:timer_external_dsl_parser_basic_structure
+#+BEGIN_SRC java
+  public class Parser {
+      private final List<Token> tokens;
+      private int current;
+  
+      public Parser(List<Token> tokens) {
+          this.tokens = tokens;
+          this.current = 0;
+      }
+  }
+#+END_SRC
+
+As was mentioned, the recursive descent technique is a translation of the grammar into code. The first rule of the grammar specifies that a program consists of one or more timer statements. Therefore the method with which the parser will be called has to reflect this rule, as shown in listing [[lst:timer_external_dsl_parser_parse_method]]. 
+
+#+CAPTION: The initial method with which the parser will be called and which reflects the first rule of the grammar.
+#+ATTR_LATEX: :placement [!h]
+#+NAME: lst:timer_external_dsl_parser_parse_method
+#+BEGIN_SRC java
+      // program → timer_stmt+
+      public List<TimerStmt> parse() throws TimerDSLException {
+          var timerStatements = new ArrayList<TimerStmt>();
+          timerStatements.add(timerStmt());
+
+          while (!isAtEnd()) {
+              timerStatements.add(timerStmt());
+          }
+
+          return timerStatements;
+      }
+#+END_SRC
+
+First, a new list of timer statements, which are the root nodes of the AST, is created. The same list will be returned at the end of the method. Afterwards, since the rule expects at least one timer statement, the code also adds at least one element to that list. Subsequently, additional timer statements are added to the list until the end of the list is reached, i.e. an /EOF/ token is encountered.
+
+The /timerStmt/ method corresponds to the next rule in the grammar and is outlined in listing [[lst:timer_external_dsl_parser_timer_stmt_method]].
+
+#+CAPTION: The /timerStmt/ method which corresponds to the /timer\under{}stmt/ rule of the grammar.
+#+ATTR_LATEX: :placement [!h]
+#+NAME: lst:timer_external_dsl_parser_timer_stmt_method
+#+BEGIN_SRC java
+      // timer_stmt → "timer" command (once_timer | repeated_timer) "end"
+      private TimerStmt timerStmt() throws TimerDSLException {
+          consume(TIMER, "Expected 'timer' at the beginning of definition.");
+
+          var command = command();
+
+          TimerConfiguration config = null;
+
+          if (match(ONCE)) config = onceTimer();
+          else {
+              consume(REPEATEDLY, "Expected 'once' or 'repeatedly' after command.");
+              config = repeatedTimer();
+          }
+
+          consume(END, "Expected 'end' at the end of definition.");
+
+          return new TimerStmt(command, config);
+      }
+#+END_SRC
+
+Throughout the parser there are two helpful methods: /consume/ and /match/. The /consume/ method expects a token of a certain type at the current position. In case the type of the current token corresponds to this expected type, the token is returned and the /current/ attribute of the parser incremented, if not then an exception with a given message is thrown. The /match/ method, however, only returns a boolean which is true if the given type is equal to the type of the current token. It does not change the position of the parser inside the list of tokens.
+Therefore, in the first line of the /timerStmt/ method a /TIMER/ token is expected, since every timer statement has to start with the /timer/ keyword. In case no /TIMER/ token exists at that position, an exception is thrown with the message /Expected 'timer' at the beginning of definition./ Since the /command/ nonterminal follows the /timer/ keyword, the method calls a /command/ method in the next step which handles the /command/ rule. After the command, there are two possibilities: either a /once timer/ or a /repeated timer/ configuration. Since the once timer has to start with the /once/ keyword, the method checks whether the current token is of type /ONCE/. If yes it calls the /onceTimer/ method, otherwise it expects a /REPEATEDLY/ token and calls the corresponding method. At the end of the timer statement, the /END/ token must be consumed and the whole timer statement is returned.
+
+As a final example, listing [[lst:timer_external_dsl_parser_timer_command_method]] depicts the /command/ method.
+
+#+CAPTION: The /command/ method currently only has the print command as a possibility.
+#+ATTR_LATEX: :placement [!h]
+#+NAME: lst:timer_external_dsl_parser_timer_command_method
+#+BEGIN_SRC java
+      // command → "print" STRING
+      private Command command() throws TimerDSLException {
+          consume(PRINT, "Expected 'print' command.");
+          var message = consume(STRING, "Expected 'string' after 'print'.");
+          return new PrintCommand((String) message.getValue());
+      }
+#+END_SRC
+
+The method first expects a /PRINT/ token, followed by a /STRING/ token. In the case of the string, the returned token of the /consume/ method is actually saved in a variable, to pass it to the /PrintCommand/ AST element. The remaining methods of the recursive descent parser (see\nbsp[[lst:timer_external_dsl_parser_complete]] in the appendix) for this DSL work very similar to the examples that were presented above. All methods of the parser correspond to one rule of the grammar. The parser then utilizes these methods to descent recursively according to the grammar to construct an AST in the end.
+
+The final step of the processing of the DSL is to walk through the AST returned by the parser and interpret it. Since this DSL is rather simple, the /interpreter/ is implemented using a very naive approach. The basic structure of the interpreter is visible in listing [[lst:timer_external_dsl_interpreter_structure]].
+
+#+CAPTION: The basic structure of the interpreter.
+#+ATTR_LATEX: :placement [!h]
+#+NAME: lst:timer_external_dsl_interpreter_structure
+#+BEGIN_SRC java
+  public class Interpreter {
+      private List<TimerStmt> timerStatements;
+
+      public Interpreter(List<TimerStmt> timerStatements) {
+          this.timerStatements = timerStatements;
+      }
+
+      public void interpret() throws TimerDSLException {
+          for(var stmt: timerStatements) {
+              evaluate(stmt);
+          }
+      }
+  }
+#+END_SRC
+
+The interpreter receives the list of statements, which was built by the parser, through its constructor. It has a public /interpret/ method which iterates over each statement and evaluates it. Listing [[lst:timer_external_dsl_interpreter_evaluate_method]] shows the /evaluate/ method which accepts a single timer statement and performs the actual evaluation.
+
+#+CAPTION: The /evaluate/ method with which a statement is evaluated by the timer.
+#+ATTR_LATEX: :placement [!h]
+#+NAME: lst:timer_external_dsl_interpreter_evaluate_method
+#+BEGIN_SRC java
+      private void evaluate(TimerStmt stmt) throws TimerDSLException {
+          var timer = new Timer();
+          var timerTask = buildTask(stmt.getCommand());
+
+          if (stmt.getConfiguration() instanceof TimerConfiguration.OnceTimer) {
+              var onceTimer = (TimerConfiguration.OnceTimer) stmt.getConfiguration();
+              timer.schedule(
+                  timerTask,
+                  getMillis(
+                      onceTimer.getAfterSetting().getNumber(),
+                      onceTimer.getAfterSetting().getUnit()
+                  )
+              );
+          } else {
+              var repeatedTimer = (TimerConfiguration.RepeatedTimer) stmt.getConfiguration();
+              timer.schedule(
+                  timerTask,
+                  getMillis(
+                      repeatedTimer.getAfterSetting().getNumber(),
+                      repeatedTimer.getAfterSetting().getUnit()
+                  ),
+                  getMillis(
+                      repeatedTimer.getEverySetting().getNumber(),
+                      repeatedTimer.getEverySetting().getUnit()
+                  )
+              );
+          }
+      }
+#+END_SRC
+
+The interpreter first "walks" to the /command/ node of the statement to build an instance of the /TimerTask/ class provided by the JDK. It then checks whether the configuration is a /once timer/ or a /repeated timer/ and schedules the timer using the remaining nodes of the AST. Listing [[lst:timer_external_dsl_interpreter_remaining_methods]] presents the remaining methods of the interpreter which are used by the /evaluate/ method.
+
+#+CAPTION: Remaining methods of the interpreter.
+#+ATTR_LATEX: :placement [!h]
+#+NAME: lst:timer_external_dsl_interpreter_remaining_methods
+#+BEGIN_SRC java
+      private TimerTask buildTask(Command command) throws TimerDSLException {
+          if (command instanceof Command.PrintCommand) {
+              var message = ((Command.PrintCommand) command).getMessage();
+              return new TimerTask() {
+                  @Override
+                  public void run() {
+                      System.out.println(message);
+                  }
+              };
+          } else throw new TimerDSLException("Unknown command type");
+      }
+
+      private long getMillis(long number, TimerConfiguration.TimeUnit unit) {
+          if (unit == TimerConfiguration.TimeUnit.SECONDS) {
+              return number * 1000;
+          } else if (unit == TimerConfiguration.TimeUnit.MINUTES) {
+              return number * 1000 * 60;
+          } else {
+              return number * 1000 * 60 * 60;
+          }
+      }
+#+END_SRC
+
+It's noticable that the /instanceof/ checks could make the code of the interpreter quite obscure if the DSL is much more complex. For this reason, Bob Nystrom presents the /visitor pattern/ in his work [[cite:nystrominterpreters]] as a possibility to cleanly structure the interpreter without having to resort to /instanceof/ checks when walking through the AST. However, in the case of this simple DSL, the visitor pattern would have been overkill as a solution.
+
+Naturally, walking through the AST is not the only possibility to interpret the code of the DSL. Although no other techniques to write interpreters for external DSLs will be introduced in this section, Martin Fowler [[cite:fowler2010domain]] highlights more possibilities which can be consulted for further information regarding this topic.
 
 * Overview of GraalVM
 
@@ -320,5 +889,386 @@ Evaluation how good this actually works
 
 Business as usual
 
-
 #+BIBLIOGRAPHY: Refs plain
+
+:APPENDIX:
+\appendix
+\section{Completion of Code Listings}
+\subsection{Internal Timer DSL}
+
+#+CAPTION: All remaining classes to define a periodic timer task.
+#+ATTR_LATEX: :placement [!h]  
+#+NAME: lst:timer_internal_dsl_remaining_periodic_classes
+#+BEGIN_SRC java
+  public final class RepeatableTimerExpressionBuilder {
+      private final TimerTask task;
+
+      public RepeatableTimerExpressionBuilder(TimerTask task) {
+          this.task = task;
+      }
+
+      public PeriodicRepeatableTimerExpressionBuilder every(long period) {
+          return new PeriodicRepeatableTimerExpressionBuilder(this.task, period);
+      }
+  }
+
+  public final class PeriodicRepeatableTimerExpressionBuilder {
+      private final TimerTask task;
+      private final long period;
+
+      public PeriodicRepeatableTimerExpressionBuilder(TimerTask task, long period) {
+          this.task = task;
+          this.period = period;
+      }
+
+      public FinalizedRepeatableTimerExpressionBuilder rightNow() {
+          return after(0);
+      }
+
+      public FinalizedRepeatableTimerExpressionBuilder after(long delay) {
+          return new FinalizedRepeatableTimerExpressionBuilder(this.task, this.period, delay);
+      }
+  }
+
+  public final class FinalizedRepeatableTimerExpressionBuilder {
+      private final TimerTask task;
+      private final long period;
+      private final long delay;
+
+      public FinalizedRepeatableTimerExpressionBuilder(TimerTask task, long period, long delay) {
+          this.task = task;
+          this.period = period;
+          this.delay = delay;
+      }
+
+      public void setup() {
+          var timer = new Timer();
+          timer.schedule(this.task, this.delay, this.period);
+      }
+  }
+#+END_SRC
+
+#+CAPTION: All remaining classes to define a single timer task.
+#+ATTR_LATEX: :placement [!h]
+#+NAME: lst:timer_internal_dsl_remaining_single_classes
+#+BEGIN_SRC java
+  public static class SingleTimerExpressionBuilder {
+      private final TimerTask task;
+
+      public SingleTimerExpressionBuilder(TimerTask task) {
+          this.task = task;
+      }
+
+      public FinalizedSingleTimerExpressionBuilder rightNow() {
+          return after(0);
+      }
+
+      public FinalizedSingleTimerExpressionBuilder after(long delay) {
+          return new FinalizedSingleTimerExpressionBuilder(this.task, delay);
+      }
+  }
+
+  public static class FinalizedSingleTimerExpressionBuilder {
+      private final TimerTask task;
+      private final long delay;
+
+      public FinalizedSingleTimerExpressionBuilder(TimerTask task, long delay) {
+          this.task = task;
+          this.delay = delay;
+      }
+
+      public void setup() {
+          var timer = new Timer();
+          timer.schedule(this.task, delay);
+      }
+  }
+#+END_SRC
+
+\clearpage
+\subsection{External Timer DSL}
+
+#+CAPTION: The whole lexer class of the external timer scheduling DSL.
+#+ATTR_LATEX: :placement [!h]
+#+NAME: lst:timer_external_dsl_lexer_class
+#+BEGIN_SRC java
+  public class Lexer {
+      private static final Map<String, TokenType> KEYWORDS = new HashMap<>();
+      private int startOfToken = 0;
+      private int endOfToken = 0;
+      private final String code;
+      private final List<Token> tokens = new ArrayList<>();
+
+      static {
+          KEYWORDS.putAll(Map.of(
+              "timer", TIMER, "print", PRINT, "repeatedly", REPEATEDLY, "once", ONCE,
+              "every", EVERY, "after", AFTER, "seconds", SECONDS, "minutes", MINUTES,
+              "hours", HOURS, "right", RIGHT
+          ));
+          KEYWORDS.putAll(Map.of(
+              "now", NOW, "end", END
+          ));
+      }
+
+      public Lexer(String code) {
+          this.code = code;
+      }
+
+      public List<Token> getTokens() throws TimerDSLException {
+          while (!isAtEnd()) {
+              readNextToken();
+              this.startOfToken = this.endOfToken + 1;
+              this.endOfToken = this.startOfToken;
+          }
+
+          tokens.add(new Token(EOF, null));
+          return tokens;
+      }
+
+      private void readNextToken() throws TimerDSLException {
+          var nextChar = code.charAt(this.startOfToken);
+
+          if (List.of(' ', '\r', '\t', '\n').contains(nextChar)) {
+              // do nothing
+          } else if ('"' == nextChar) {
+              string();
+          } else if (isDigit(nextChar)) {
+              number();
+          } else if (isAlpha(nextChar)) {
+              keyword();
+          } else {
+              throw new TimerDSLException("Unexpected character");
+          }
+      }
+
+      // Continues on the next page
+#+END_SRC
+
+#+CAPTION: The whole lexer class of the external timer scheduling DSL (continuation).
+#+ATTR_LATEX: :placement [!h]
+#+NAME: lst:timer_external_dsl_lexer_class_part_2
+#+BEGIN_SRC java
+      private void string() throws TimerDSLException {
+          endOfToken++;
+          while (peek() != '"' && !isAtEnd()) endOfToken++;
+
+          if (isAtEnd()) throw new TimerDSLException("Unterminated string");
+
+          endOfToken++;
+          var value = code.substring(startOfToken + 1, endOfToken - 1);
+          tokens.add(new Token(STRING, value));
+      }
+
+      private void number() {
+          while (isDigit(peek())) endOfToken++;
+          tokens.add(
+              new Token(NUMBER, Integer.parseInt(code.substring(startOfToken, endOfToken)))
+          );
+      }
+
+      private void keyword() throws TimerDSLException {
+          while (isAlpha(peek())) endOfToken++;
+          var text = code.substring(startOfToken, endOfToken);
+
+          if (KEYWORDS.containsKey(text))
+              tokens.add(new Token(KEYWORDS.get(text), null));
+          else
+              throw new TimerDSLException("Unexpected keyword.");
+      }
+
+      private char peek() {
+          return code.charAt(endOfToken);
+      }
+
+      private boolean isDigit(char c) {
+          return c >= '0' && c <= '9';
+      }
+
+      private boolean isAlpha(char c) {
+          return c >= 'a' && c <= 'z';
+      }
+
+      private boolean isAtEnd() {
+          return startOfToken >= code.length();
+      }
+  }
+#+END_SRC
+
+#+CAPTION: The timer configuration classes of the AST.
+#+ATTR_LATEX: :placement [!h]
+#+NAME: lst:timer_external_dsl_ast_timer_configuration
+#+BEGIN_SRC java
+  public abstract class TimerConfiguration {
+      public enum TimeUnit {
+          SECONDS, MINUTES, HOURS
+      }
+  
+      public static class OnceTimer extends TimerConfiguration {
+          private final TimeSetting afterSetting;
+  
+          public OnceTimer(TimeSetting afterSetting) {
+              this.afterSetting = afterSetting;
+          }
+  
+          public TimeSetting getAfterSetting() {
+              return afterSetting;
+          }
+      }
+  
+      public static class RepeatedTimer extends TimerConfiguration {
+          private final TimeSetting everySetting;
+          private final TimeSetting afterSetting;
+  
+          public RepeatedTimer(TimeSetting everySetting, TimeSetting afterSetting) {
+              this.everySetting = everySetting;
+              this.afterSetting = afterSetting;
+          }
+  
+          public TimeSetting getEverySetting() {
+              return everySetting;
+          }
+  
+          public TimeSetting getAfterSetting() {
+              return afterSetting;
+          }
+      }
+  
+      public static class TimeSetting {
+          private final long number;
+          private final TimeUnit unit;
+  
+          public TimeSetting(long number, TimeUnit unit) {
+              this.number = number;
+              this.unit = unit;
+          }
+  
+          public long getNumber() {
+              return number;
+          }
+  
+          public TimeUnit getUnit() {
+              return unit;
+          }
+      }
+  }
+#+END_SRC
+
+#+CAPTION: The complete recursive descent parser.
+#+ATTR_LATEX: :placement [!h]
+#+NAME: lst:timer_external_dsl_parser_complete
+#+BEGIN_SRC java
+  public class Parser {
+      private final List<Token> tokens;
+      private int current;
+
+      public Parser(List<Token> tokens) {
+          this.tokens = tokens;
+          this.current = 0;
+      }
+
+      // program → timer_stmt+
+      public List<TimerStmt> parse() throws TimerDSLException {
+          var timerStatements = new ArrayList<TimerStmt>();
+          timerStatements.add(timerStmt());
+
+          while (!isAtEnd()) {
+              timerStatements.add(timerStmt());
+          }
+
+          return timerStatements;
+      }
+
+      // timer_stmt → "timer" command (once_timer | repeated_timer) "end"
+      private TimerStmt timerStmt() throws TimerDSLException {
+          consume(TIMER, "Expected 'timer' at the beginning of definition.");
+
+          var command = command();
+
+          TimerConfiguration config = null;
+
+          if (match(ONCE)) config = onceTimer();
+          else {
+              consume(REPEATEDLY, "Expected 'once' or 'repeatedly' after command.");
+              config = repeatedTimer();
+          }
+
+          consume(END, "Expected 'end' at the end of definition.");
+
+          return new TimerStmt(command, config);
+      }
+
+      // command → "print" STRING
+      private Command command() throws TimerDSLException {
+          consume(PRINT, "Expected 'print' command.");
+          var message = consume(STRING, "Expected 'string' after 'print'.");
+          return new PrintCommand((String) message.getValue());
+      }
+
+      // once_timer → "once" after_configuration
+      private OnceTimer onceTimer() throws TimerDSLException {
+          current++;
+          return new OnceTimer(afterConfig());
+      }
+
+      // Continues on the next page
+#+END_SRC
+
+#+CAPTION: The complete recursive descent parser (Continuation).
+#+ATTR_LATEX: :placement [!h]
+#+NAME: lst:timer_external_dsl_parser_complete
+#+BEGIN_SRC java
+      // repeated_timer → "repeatedly" "every" NUMBER time_unit after_configuration
+      private RepeatedTimer repeatedTimer() throws TimerDSLException {
+          consume(EVERY, "Expected 'every' after 'repeatedly'.");
+          var number = consume(NUMBER, "Expected 'number' after 'every'.");
+          return new RepeatedTimer(
+              new TimeSetting(Long.valueOf((Integer) number.getValue()), timeUnit()),
+              afterConfig()
+          );
+      }
+  
+      // after_configuration → "right" "now" | "after" NUMBER time_unit
+      private TimeSetting afterConfig() throws TimerDSLException {
+          if (match(RIGHT)) {
+              current++;
+              consume(NOW, "Expected 'now' after 'right'.");
+              return new TimeSetting(0, TimeUnit.SECONDS);
+          } else {
+              consume(AFTER, "Expected 'right now' or 'after' as a time setting.");
+              var number = consume(NUMBER, "Expected 'number' after 'after'.");
+              return new TimeSetting(Long.valueOf((Integer) number.getValue()), timeUnit());
+          }
+      }
+  
+      // time_unit → "seconds" | "minutes" | "hours"
+      private TimeUnit timeUnit() throws TimerDSLException {
+          if (match(SECONDS)) {
+              current++;
+              return TimeUnit.SECONDS;
+          } else if (match(MINUTES)) {
+              current++;
+              return TimeUnit.MINUTES;
+          } else {
+              consume(HOURS, "Expected 'minutes', 'seconds', or 'hours' as time unit.");
+              return TimeUnit.HOURS;
+          }
+      }
+  
+      private Token consume(TokenType type, String message) throws TimerDSLException {
+          if (match(type)) {
+              current++;
+              return tokens.get(current-1);
+          }
+  
+          throw new TimerDSLException(message);
+      }
+  
+      private boolean match(TokenType type) {
+          return tokens.get(current).getType() == type;
+      }
+  
+      private boolean isAtEnd() {
+          return tokens.get(current).getType() == EOF;
+      }
+  }
+#+END_SRC
+:END:
